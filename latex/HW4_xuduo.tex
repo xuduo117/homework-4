@@ -1,0 +1,161 @@
+\documentclass[12pt]{article} 
+\usepackage{aaspp,tighten,hacks,graphicx}
+\usepackage{indentfirst}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[round]{natbib}
+
+
+\def\arcsec{\hbox{$^{\prime\prime}$}}
+\def\arcmin{\hbox{$^{\prime}$}}
+
+
+\begin{document}
+
+\title{Homework 4}
+\author{Duo Xu}
+\affil{Department of Astronomy, The University of Texas at Austin, Austin, TX 78712, USA\\
+Email: xuduo117@utexas.edu}
+
+{\bf All source codes are available on https://github.com/xuduo117/homework-4}
+
+
+
+\section{Algorithm }
+\label{Algorithm}
+
+For a circular orbit, we have the RV
+
+\begin{equation}
+\left.\begin{aligned}
+V_{star}=&(-\frac{m\, {\sin i}}{M_{star}+m_{planet}})\sqrt{\frac{G(M_{star}+m_{planet})}{a}} \sin (\frac{2\pi}{T}(t-T_{0})) \\
+=&-(2\pi G)^{1/3}T^{-1/3}(M_{star}+m_{planet})^{-2/3}m_{planet}\sin i \sin (\frac{2\pi}{T}(t-T_{0}))
+\end{aligned}\right.
+\label{eq.part_1-1}
+\end{equation}
+
+Since $M_{star}\gg m_{planet}$, we follow the same strategy in \citet{2000ApJ...532L..55M} to simplify the equation, 
+
+\begin{equation}
+\left.\begin{aligned}
+V_{star}=&(-\frac{m\, {\sin i}}{M_{star}+m_{planet}})\sqrt{\frac{GM_{star}}{a}} \sin (\frac{2\pi}{T}(t-T_{0}))\\
+=&-(2\pi G)^{1/3}T^{-1/3}M_{star}^{-2/3}m_{planet}\sin i \sin (\frac{2\pi}{T}(t-T_{0}))
+\end{aligned}\right.
+\label{eq.part_1-2}
+\end{equation}
+
+From the literature, we have the star's mass of 1.1$M_{\odot}$. We need to fit $m_{planet}\sin i$, $T$ and $T_{0}$. Here we arbitrarily set the $T_{0}$ to be the time when the planet is in front of the star, where the star's radial velocity is zero and starts to move forward, which has a negative velocity (blue shift). 
+
+
+Our goal is, given a model function, $f(x|a)$ for our N-dimensional data y, we want to find the set of M parameters, a, for which $P(a|y)$ is maximized.
+
+According to Bayes
+\begin{equation}
+P(a|y)\propto P (y|a)P(a)
+\end{equation}
+
+\begin{equation}
+P(y|a)=\prod_{i=1}^{N} \exp (-\frac{(y_{i}-f(x_{i}|a))^{2}}{2\sigma _{i}^{2}})
+\end{equation}
+
+We define the posterior probability of the model as
+\begin{equation}
+\pi (a)=P(y|a)P(a)
+\end{equation}
+
+
+Then we build the Metropolis-Hastings fitter with a Gibbs sampler.
+\begin{enumerate}[1.]
+
+\item We need to choose a proposal distribution $q(a_{i}|a_{i-1})$, which we select to be a multivariate normal distribution centered on $a_{i-1}$. If we can draw samples from the conditional distributions, Gibbs sampling can be much more efficient than regular Metropolis-Hastings. But when it is difficult to sample from a conditional distribution, we can sample using a Metropolis-Hastings algorithm instead - this is known as Metropolis within Gibbs (Metropolis-Hastings fitter with a Gibbs sampler).
+
+\item We draw a candidate value, $a_{ic}$ from $q(a_{i}|a_{i-1})$. This is just a candidate step.
+
+\item Now calculate an acceptance probability $\alpha (a_{i-1},a_{ic})$ according to
+
+\begin{equation}
+\alpha (a_{i-1},a_{ic})=min(1,\frac{\pi(a_{ic})q(a_{i-1}|a_{ic})}{\pi(a_{i-1})q(a_{ic}|a_{i-1})})
+\end{equation}
+
+\item Draw a uniformly distributed random number, $u$, between 0 and 1. If $u < \alpha (a_{i-1},a_{ic})$
+then accept the candidate step: $a_{i} \rightarrow a_{ic}$. If not, then set $a_{i} = a_{i-1}$.
+
+\item Go back to step 2 and take the step 3-4. We set the stop criteria when the accepted sample number over 50000 or the total iteration number over 200000. 
+
+\end{enumerate}
+
+
+Then we discard the first 2000 steps and make statistic on the remaining samples. The total iteration number is 338470, and the accepted sample number is 100000, so the acceptance rate is 29.5447\%.
+ 
+We make statistic on the samples. We find the median value for each parameter and sort each parameter to get the 16\% and 84\% range, which represents the 1-$\sigma$ confidence interval.
+Figure~\ref{fig.1d} shows the marginal distribution of each parameter.
+$m_{planet}\sin i =0.67305^{-0.00493}_{0.00501}$, $T=3.52468622 ^{-1.58562914394e-05} _{1.63533235731e-05}$ and $T_{0}=1.74498 ^{-0.005241} _{0.004714}$.
+
+
+\begin{figure}[htp]
+\centering
+\includegraphics[width=.49\linewidth]{{msini_1d}.pdf}
+\includegraphics[width=.49\linewidth]{{T_1d}.pdf}
+\includegraphics[width=.49\linewidth]{{T0_1d}.pdf}
+\caption{The marginal distribution of each parameter and the median value for each parameter with 1-$\sigma$ confidence interval. }
+\label{fig.1d}
+\end{figure}
+
+We produce contour plots of the 2D posterior for all combinations of parameters with contours enclose useful amounts of the posterior (68/95/99.7\%), as shown in Figure~\ref{fig.2d}. To get the contours, we first plot the hist 2D plot of the two parameters and get the counts in each parameter cell. Then we find the value, at which the contour enclosed 68/95/99.7\% counts. 
+
+
+
+\begin{figure}[htp]
+\centering
+\includegraphics[width=.49\linewidth]{{msini_T_2dhist}.pdf}
+\includegraphics[width=.49\linewidth]{{msini_T0_2dhist}.pdf}
+\includegraphics[width=.49\linewidth]{{T_T0_2dhist}.pdf}
+\caption{The 2D posterior for all combinations of parameters with contours. }
+\label{fig.2d}
+\end{figure}
+
+
+
+
+We also plot a phased RV curve with the data points (with error bars) and best-fit solution in Figure~\ref{fig.RV-phase}. Around phase of $2\pi$ or 0, there are a series of observational data lined vertically, which are not well fitted. To examine these points, we plot the original RV curve with fitted solution in Figure~\ref{fig.RV-original}. From the residual, we can clearly see around JD=414+2451341, a series of observations have been conducted. And the time interval is really short but the change of RV  is significantly large, which indicates a much shorter period. Is it indicating another short orbit period planet?
+
+
+
+
+\begin{figure}[htp]
+\centering
+\includegraphics[width=.99\linewidth]{{RV_phase}.pdf}
+\caption{The phased RV curve with the data points (with error bars) and best-fit solution. }
+\label{fig.RV-phase}
+\end{figure}
+
+\begin{figure}[htp]
+\centering
+\includegraphics[width=.99\linewidth]{{fitplot}.pdf}
+\caption{The original RV curve with the data points (with error bars) and best-fit solution. }
+\label{fig.RV-original}
+\end{figure}
+
+
+We import a more professional python library to plot the statistical result as shown in Figure~\ref{fig.corner}.
+\begin{figure}[htp]
+\centering
+\includegraphics[width=.99\linewidth]{{corner_1}.pdf}
+\caption{The distribution of each parameter. }
+\label{fig.corner}
+\end{figure}
+
+
+ 
+
+\begin{thebibliography}{}
+
+
+\bibitem[Mazeh et al.(2000)]{2000ApJ...532L..55M} Mazeh, T., Naef, D., Torres, G., et al.\ 2000, \apjl, 532, L55 
+
+
+\end{thebibliography}
+
+
+\end{document}
